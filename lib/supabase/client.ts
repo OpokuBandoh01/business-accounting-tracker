@@ -142,7 +142,7 @@ export function createClient(): ReturnType<typeof createBrowserClient> {
                           id: value,
                           full_name: isEmployee ? 'Mr. P' : 'Opoku Bandoh',
                           role: isEmployee ? 'Employee' : 'Administrator',
-                          business_name: 'Mabushi Security Systems'
+                          business_name: "R&B's Security Systems"
                         },
                         error: null
                       }

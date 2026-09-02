@@ -17,7 +17,7 @@ export default function LedgerDashboard() {
   const [active, setActive] = useState('Overview')
   const [currentDate, setCurrentDate] = useState('')
   const [greeting, setGreeting] = useState('Welcome')
-  const [businessName, setBusinessName] = useState('Mabushi Security Systems')
+  const [businessName, setBusinessName] = useState("R&B's Security Systems")
   const [entries, setEntries] = useState(seed)
   const [mobile, setMobile] = useState(false)
   const [notice, setNotice] = useState(false)
@@ -132,8 +132,20 @@ export default function LedgerDashboard() {
         const nextRole = profileRow?.role === 'Administrator' ? 'Administrator' : 'Employee'
         setRole(nextRole)
         setDisplayName(profileRow?.full_name?.trim() || user.email?.split('@')[0] || 'Team member')
-        if (profileRow?.business_name) {
-          setBusinessName(profileRow.business_name)
+        try {
+          const bRes = await fetch('/api/business')
+          if (bRes.ok) {
+            const bData = await bRes.json()
+            if (bData.business_name && mounted) {
+              setBusinessName(bData.business_name)
+            }
+          } else if (profileRow?.business_name && mounted) {
+            setBusinessName(profileRow.business_name)
+          }
+        } catch {
+          if (profileRow?.business_name && mounted) {
+            setBusinessName(profileRow.business_name)
+          }
         }
         await loadProducts()
         if (window.location.pathname.startsWith('/admin') && nextRole !== 'Administrator') {
@@ -181,6 +193,19 @@ export default function LedgerDashboard() {
   }
   const handleSaveBusinessName = async (name: string) => {
     if (!user) return
+    try {
+      const res = await fetch('/api/business', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      })
+      if (res.ok) {
+        setBusinessName(name)
+        return
+      }
+    } catch (e) {
+      console.error('Failed to sync business name via API:', e)
+    }
     const { error } = await supabase.from('profiles').update({ business_name: name }).eq('id', user.id)
     if (!error) {
       setBusinessName(name)

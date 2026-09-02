@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Database service configuration is missing.' }, { status: 500 })
   }
   const admin = createClient(adminUrl, adminKey, { auth: { autoRefreshToken: false, persistSession: false } })
-  const { data: invite, error: inviteError } = await admin.from('invites').insert({ email, role, business_name: profile.business_name ?? 'Mabushi Security Systems', invited_by: user.id, token_hash: crypto.randomUUID() }).select('id').single()
+  const { data: invite, error: inviteError } = await admin.from('invites').insert({ email, role, business_name: profile.business_name ?? "R&B's Security Systems", invited_by: user.id, token_hash: crypto.randomUUID() }).select('id').single()
   if (inviteError) return NextResponse.json({ error: inviteError.code === '23505' ? 'An invitation already exists for this email.' : 'Could not create invitation.' }, { status: 400 })
   const { error } = await admin.auth.admin.inviteUserByEmail(email, { data: { full_name: fullName, invited_role: role, invite_id: invite.id } })
   if (error) { await admin.from('invites').delete().eq('id', invite.id); return NextResponse.json({ error: 'The invitation email could not be sent. Check the email provider configuration.' }, { status: 502 }) }
