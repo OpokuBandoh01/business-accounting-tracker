@@ -16,6 +16,7 @@ export default function LedgerDashboard() {
   const [displayName, setDisplayName] = useState('Team member')
   const [active, setActive] = useState('Overview')
   const [currentDate, setCurrentDate] = useState('')
+  const [greeting, setGreeting] = useState('Welcome')
   const [businessName, setBusinessName] = useState('Mabushi Security Systems')
   const [entries, setEntries] = useState(seed)
   const [mobile, setMobile] = useState(false)
@@ -99,7 +100,16 @@ export default function LedgerDashboard() {
   }, [supabase])
 
   useEffect(() => {
-    setCurrentDate(new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
+    const now = new Date()
+    setCurrentDate(now.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
+    const hour = now.getHours()
+    if (hour < 12) {
+      setGreeting('Good morning')
+    } else if (hour < 17) {
+      setGreeting('Good afternoon')
+    } else {
+      setGreeting('Good evening')
+    }
     let mounted = true
     if (!user) {
       setAuthLoading(true)
@@ -174,6 +184,13 @@ export default function LedgerDashboard() {
     const { error } = await supabase.from('profiles').update({ business_name: name }).eq('id', user.id)
     if (!error) {
       setBusinessName(name)
+    }
+  }
+  const handleSaveDisplayName = async (name: string) => {
+    if (!user) return
+    const { error } = await supabase.from('profiles').update({ full_name: name }).eq('id', user.id)
+    if (!error) {
+      setDisplayName(name)
     }
   }
   const handleAddProduct = async (product: { name: string; category: string; stock: number; revenue: number; units: number }) => {
@@ -278,9 +295,9 @@ export default function LedgerDashboard() {
   return <main className="min-h-screen bg-background text-foreground"><div className="flex min-h-screen">
     {mobile && <div className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm md:hidden" onClick={() => setMobile(false)} />}
     <aside className={`${mobile ? 'flex' : 'hidden'} fixed inset-0 z-40 w-72 flex-col border-r border-border bg-sidebar p-5 md:static md:flex md:w-64`}><div className="flex items-center justify-between gap-3 px-2"><div className="flex items-center gap-3"><div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground"><WalletCards className="size-5" /></div><div><p className="font-semibold">Kolo Ledger</p><p className="text-xs text-muted-foreground">{businessName}</p></div></div><button className="md:hidden" onClick={() => setMobile(false)} aria-label="Close navigation"><X className="size-5" /></button></div><div className="mt-8 rounded-xl border border-sidebar-border bg-sidebar-accent p-3"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your access</p><div className="mt-2 flex items-center justify-between"><span className="text-sm font-semibold">{role}</span><ShieldCheck className="size-4 text-accent" /></div><p className="mt-1 text-xs text-muted-foreground">Managed by your administrator</p></div><div className="mt-7 space-y-1"><p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Workspace</p>{visibleNav.map(({ label, icon: Icon }) => <button key={label} onClick={() => go(label)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${active === label ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-sidebar-accent'}`}><Icon className="size-[18px]" />{label}</button>)}</div><div className="mt-auto"><button onClick={() => go('Settings')} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent"><Settings2 className="size-[18px]" />Settings</button><div className="mt-3 flex items-center gap-3 border-t border-sidebar-border px-3 pt-4"><div className="flex size-8 items-center justify-center rounded-full bg-accent text-xs font-bold">{displayName.split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{displayName}</p><p className="text-xs text-muted-foreground">{role}</p></div><button onClick={() => setProfile(!profile)} aria-label="Open administrator menu"><MoreHorizontal className="size-4" /></button></div></div></aside>
-    <section className="min-w-0 flex-1"><header className="flex h-20 items-center justify-between border-b border-border px-5 md:px-10"><div className="flex items-center gap-3"><button className="rounded-lg border border-border p-2 md:hidden" onClick={() => setMobile(true)} aria-label="Open navigation"><Menu className="size-5" /></button><div><p className="text-xs text-muted-foreground">{currentDate}</p><h1 className="mt-1 text-xl font-semibold md:text-2xl">Good morning, {displayName.split(' ')[0]}</h1></div></div><div className="relative flex items-center gap-3"><button onClick={() => setNotice(!notice)} className="relative rounded-xl border border-border p-2.5 text-muted-foreground" aria-label="Notifications"><Bell className="size-[18px]" /></button><button onClick={() => setProfile(!profile)} className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium"><span className="flex size-6 items-center justify-center rounded-full bg-accent text-[10px] font-bold">{displayName.split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase()}</span><span className="hidden sm:inline">{role}</span><ChevronDown className="size-4" /></button>{notice && <Popover title="Notifications"><p className="text-muted-foreground text-xs">No new notifications.</p></Popover>}{profile && <Popover title="Account"><button onClick={() => setLogout(true)} className="flex w-full items-center gap-2 text-left text-sm text-expense"><LogOut className="size-4" />Log out</button></Popover>}</div></header>
+    <section className="min-w-0 flex-1"><header className="flex h-20 items-center justify-between border-b border-border px-5 md:px-10"><div className="flex items-center gap-3"><button className="rounded-lg border border-border p-2 md:hidden" onClick={() => setMobile(true)} aria-label="Open navigation"><Menu className="size-5" /></button><div><p className="text-xs text-muted-foreground">{currentDate}</p><h1 className="mt-1 text-xl font-semibold md:text-2xl">{greeting}, {displayName.split(' ')[0]}</h1></div></div><div className="relative flex items-center gap-3"><button onClick={() => setNotice(!notice)} className="relative rounded-xl border border-border p-2.5 text-muted-foreground" aria-label="Notifications"><Bell className="size-[18px]" /></button><button onClick={() => setProfile(!profile)} className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium"><span className="flex size-6 items-center justify-center rounded-full bg-accent text-[10px] font-bold">{displayName.split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase()}</span><span className="hidden sm:inline">{role}</span><ChevronDown className="size-4" /></button>{notice && <Popover title="Notifications"><p className="text-muted-foreground text-xs">No new notifications.</p></Popover>}{profile && <Popover title="Account"><button onClick={() => setLogout(true)} className="flex w-full items-center gap-2 text-left text-sm text-expense"><LogOut className="size-4" />Log out</button></Popover>}</div></header>
       <div className="mx-auto max-w-[1440px] p-5 md:p-10"><div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end"><div><div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="size-4" />Financial workspace · {role}</div><h2 className="text-3xl font-semibold tracking-tight md:text-4xl">{active === 'Overview' ? 'Your business at a glance' : active}</h2><p className="mt-2 text-sm text-muted-foreground">{active === 'Overview' ? 'Track what comes in, what goes out, and what stays.' : 'Manage business records with clarity and confidence.'}</p></div>{active !== 'Products' && <button onClick={() => setModal('entry')} className="flex h-10 items-center gap-2 self-start rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"><Plus className="size-4" />Quick entry</button>}</div>
-        {active === 'Overview' && <Overview totals={totals} entries={entries} go={go} />}{active === 'Sales recording' && <Recording type="Sale" onSave={add} displayName={displayName} products={productList} />}{active === 'Expense recording' && <Recording type="Expense" onSave={add} displayName={displayName} products={productList} />}{active === 'Reports' && <Reports totals={totals} entries={entries} />}{active === 'All entries' && <Entries entries={entries} />}{active === 'Products' && <Products products={productList} role={role} onAdd={() => setModal('product')} onEdit={setEditingProduct} />}{active === 'Team access' && <Team profiles={teamProfiles} invites={pendingInvites} onInvite={() => setModal('invite')} onRevoke={handleRevokeInvite} />}{active === 'Record safety' && <Safety entries={entries} />}{active === 'Settings' && <Settings businessName={businessName} onSave={handleSaveBusinessName} />}
+        {active === 'Overview' && <Overview totals={totals} entries={entries} go={go} />}{active === 'Sales recording' && <Recording type="Sale" onSave={add} displayName={displayName} products={productList} />}{active === 'Expense recording' && <Recording type="Expense" onSave={add} displayName={displayName} products={productList} />}{active === 'Reports' && <Reports totals={totals} entries={entries} />}{active === 'All entries' && <Entries entries={entries} />}{active === 'Products' && <Products products={productList} role={role} onAdd={() => setModal('product')} onEdit={setEditingProduct} />}{active === 'Team access' && <Team profiles={teamProfiles} invites={pendingInvites} onInvite={() => setModal('invite')} onRevoke={handleRevokeInvite} />}{active === 'Record safety' && <Safety entries={entries} />}{active === 'Settings' && <Settings role={role} businessName={businessName} displayName={displayName} email={user?.email} onSaveBusinessName={handleSaveBusinessName} onSaveDisplayName={handleSaveDisplayName} onLogout={() => setLogout(true)} />}
       </div></section>
   </div>{modal === 'entry' && <QuickEntry close={() => setModal(null)} onSave={add} displayName={displayName} products={productList} />}{modal === 'invite' && <Invite close={() => setModal(null)} onInviteSent={loadTeamData} />}{modal === 'product' && <AddProduct close={() => setModal(null)} onAdd={handleAddProduct} />}{editingProduct && <EditProduct close={() => setEditingProduct(null)} product={editingProduct} onSave={handleEditProduct} onDelete={handleDeleteProduct} />}{logout && <ConfirmLogout close={() => setLogout(false)} />}</main>
 }
@@ -502,15 +519,218 @@ function Team({ profiles, invites, onInvite, onRevoke }: { profiles: { full_name
   )
 }
 function Safety({ entries }: { entries:Entry[] }) { return <div className="space-y-6"><div className="rounded-2xl border border-border bg-card p-5"><div className="flex items-center gap-3"><ShieldCheck className="size-6 text-primary" /><div><h3 className="font-semibold">Record safety and audit trail</h3><p className="mt-1 text-sm text-muted-foreground">Every record keeps who entered it, when it was entered, and its review status.</p></div></div><div className="mt-6 divide-y divide-border">{entries.slice(0,5).map(e=><div key={e.id} className="flex items-center gap-3 py-4"><Check className="size-4 text-primary" /><div className="flex-1"><p className="text-sm font-medium">{e.person} recorded {e.label}</p><p className="text-xs text-muted-foreground">{e.date} · {e.status}</p></div><span className="text-sm font-semibold">{money(e.amount)}</span></div>)}</div></div></div> }
-function Settings({ businessName, onSave }: { businessName: string; onSave: (name: string) => void }) {
-  const [name, setName] = useState(businessName)
-  const [busy, setBusy] = useState(false)
-  const submit = async () => {
-    setBusy(true)
-    await onSave(name)
-    setBusy(false)
+function Settings({
+  role,
+  businessName,
+  displayName,
+  email,
+  onSaveBusinessName,
+  onSaveDisplayName,
+  onLogout,
+}: {
+  role: 'Administrator' | 'Employee'
+  businessName: string
+  displayName: string
+  email?: string
+  onSaveBusinessName: (name: string) => Promise<void> | void
+  onSaveDisplayName: (name: string) => Promise<void> | void
+  onLogout: () => void
+}) {
+  const [bName, setBName] = useState(businessName)
+  const [fName, setFName] = useState(displayName)
+  const [busyBusiness, setBusyBusiness] = useState(false)
+  const [busyProfile, setBusyProfile] = useState(false)
+  const [businessMsg, setBusinessMsg] = useState('')
+  const [profileMsg, setProfileMsg] = useState('')
+
+  useEffect(() => {
+    setBName(businessName)
+  }, [businessName])
+
+  useEffect(() => {
+    setFName(displayName)
+  }, [displayName])
+
+  const submitBusiness = async () => {
+    if (!bName.trim()) return
+    setBusyBusiness(true)
+    setBusinessMsg('')
+    await onSaveBusinessName(bName.trim())
+    setBusyBusiness(false)
+    setBusinessMsg('Business settings updated successfully.')
+    setTimeout(() => setBusinessMsg(''), 3500)
   }
-  return <div className="max-w-2xl rounded-2xl border border-border bg-card p-5"><h3 className="font-semibold">Business settings</h3><p className="mt-1 text-sm text-muted-foreground">Your default currency is Ghana cedis (GHS).</p><label className="mt-6 block text-sm font-medium">Business name<input value={name} onChange={e=>setName(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-3" /></label><label className="mt-4 block text-sm font-medium">Currency<input value="GHS — Ghana cedi" readOnly className="mt-2 h-11 w-full rounded-xl border border-input bg-muted px-3" /></label><button onClick={submit} disabled={busy} className="mt-6 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">{busy?'Saving…':'Save settings'}</button></div>
+
+  const submitProfile = async () => {
+    if (!fName.trim()) return
+    setBusyProfile(true)
+    setProfileMsg('')
+    await onSaveDisplayName(fName.trim())
+    setBusyProfile(false)
+    setProfileMsg('Display name updated successfully.')
+    setTimeout(() => setProfileMsg(''), 3500)
+  }
+
+  if (role === 'Administrator') {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-lg">Organization settings</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Manage your company workspace name and currency defaults.</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Administrator</span>
+          </div>
+
+          <div className="mt-6 space-y-4">
+            <label className="block text-sm font-medium">
+              Business name
+              <input
+                value={bName}
+                onChange={e => setBName(e.target.value)}
+                placeholder="Enter business name"
+                className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+              />
+            </label>
+            <label className="block text-sm font-medium">
+              Operating currency
+              <input
+                value="GHS — Ghana cedi (GH₵)"
+                readOnly
+                className="mt-2 h-11 w-full rounded-xl border border-input bg-muted px-3 text-sm text-muted-foreground cursor-not-allowed"
+              />
+            </label>
+            {businessMsg && <p className="text-xs font-semibold text-primary">{businessMsg}</p>}
+            <button
+              onClick={submitBusiness}
+              disabled={busyBusiness}
+              className="mt-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {busyBusiness ? 'Saving…' : 'Save business settings'}
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+          <h3 className="font-semibold text-lg">Administrator profile</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Your account credentials and display name across reports.</p>
+
+          <div className="mt-6 space-y-4">
+            <label className="block text-sm font-medium">
+              Display name
+              <input
+                value={fName}
+                onChange={e => setFName(e.target.value)}
+                placeholder="Full name"
+                className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+              />
+            </label>
+            <label className="block text-sm font-medium">
+              Account email
+              <input
+                value={email || 'admin@mabushi.com'}
+                readOnly
+                className="mt-2 h-11 w-full rounded-xl border border-input bg-muted px-3 text-sm text-muted-foreground cursor-not-allowed"
+              />
+            </label>
+            {profileMsg && <p className="text-xs font-semibold text-primary">{profileMsg}</p>}
+            <button
+              onClick={submitProfile}
+              disabled={busyProfile}
+              className="mt-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-60"
+            >
+              {busyProfile ? 'Updating…' : 'Update display name'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-lg">My employee profile</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Your personal identity and account details across the workspace.</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">Employee</span>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <label className="block text-sm font-medium">
+            Full name
+            <input
+              value={fName}
+              onChange={e => setFName(e.target.value)}
+              placeholder="Your full name"
+              className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            Email address
+            <input
+              value={email || 'employee@mabushi.com'}
+              readOnly
+              className="mt-2 h-11 w-full rounded-xl border border-input bg-muted px-3 text-sm text-muted-foreground cursor-not-allowed"
+            />
+          </label>
+          {profileMsg && <p className="text-xs font-semibold text-primary">{profileMsg}</p>}
+          <button
+            onClick={submitProfile}
+            disabled={busyProfile}
+            className="mt-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {busyProfile ? 'Updating…' : 'Update display name'}
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+        <h3 className="font-semibold text-lg">Workspace information</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Organization context for business operations you are recording entries for.</p>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Assigned Business</p>
+            <p className="mt-1 text-base font-semibold">{businessName}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Managed by your administrator</p>
+          </div>
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Standard Currency</p>
+            <p className="mt-1 text-base font-semibold">GHS — Ghana cedi (GH₵)</p>
+            <p className="mt-1 text-xs text-muted-foreground">Calculated automatically on all entries</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+        <div className="flex items-start gap-3.5">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <ShieldCheck className="size-5" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-sm">Account permissions & safety</h4>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              As an Employee, your account has permissions to record sales and business expenses. Every entry you log is automatically time-stamped and credited to your name in the audit trail for record integrity.
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 border-t border-border pt-4 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Want to log out?</span>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 text-xs font-semibold text-expense hover:underline"
+          >
+            <LogOut className="size-3.5" />
+            Sign out of account
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 function QuickEntry({ close, onSave, displayName, products }: { close: () => void; onSave: (e: Entry) => void; displayName: string; products: any[] }) {
   const [type, setType] = useState<Type>('Sale')
