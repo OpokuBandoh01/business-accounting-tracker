@@ -113,13 +113,47 @@ export default function LedgerDashboard() {
     let mounted = true
     if (!user) {
       setAuthLoading(true)
+      const sessionActive = typeof window !== 'undefined' ? sessionStorage.getItem('kolo_session_active') : null
+      const hash = typeof window !== 'undefined' ? window.location.hash : ''
+      const search = typeof window !== 'undefined' ? window.location.search : ''
+      const isAuthFlow =
+        hash.includes('access_token') ||
+        hash.includes('type=invite') ||
+        hash.includes('type=recovery') ||
+        hash.includes('type=signup') ||
+        search.includes('code=')
+
+      if (!sessionActive && !isAuthFlow) {
+        supabase.auth.signOut().then(() => {
+          if (mounted) {
+            setUser(null)
+            setAuthLoading(false)
+          }
+        }).catch(() => {
+          if (mounted) {
+            setUser(null)
+            setAuthLoading(false)
+          }
+        })
+        return
+      }
+
       supabase.auth.getUser().then(({ data }: any) => {
         if (!mounted) return
-        if (data.user) {
+        if (data?.user) {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('kolo_session_active', 'true')
+          }
           setUser({ id: data.user.id, email: data.user.email })
         } else {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('kolo_session_active')
+          }
           setAuthLoading(false)
         }
+      }).catch(() => {
+        if (!mounted) return
+        setAuthLoading(false)
       })
       return
     }
@@ -306,8 +340,11 @@ export default function LedgerDashboard() {
     return (
       <SetPasswordScreen
         onPasswordSet={async () => {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('kolo_session_active', 'true')
+          }
           const { data } = await supabase.auth.getUser()
-          if (data.user) {
+          if (data?.user) {
             setUser({ id: data.user.id, email: data.user.email })
           }
           setIsSettingPassword(false)
@@ -819,7 +856,7 @@ function QuickEntry({ close, onSave, displayName, products }: { close: () => voi
   )
 }
 function Invite({ close, onInviteSent }: { close:()=>void; onInviteSent?: () => void }) { const [fullName,setFullName]=useState(''); const [email,setEmail]=useState(''); const [role,setRole]=useState<'Employee'|'Administrator'>('Employee'); const [busy,setBusy]=useState(false); const [message,setMessage]=useState(''); const submit=async()=>{ if(!email||!email.includes('@')){setMessage('Enter a valid email address.');return} setBusy(true);setMessage(''); const response=await fetch('/api/admin/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName,email,role})}); const result=await response.json(); setBusy(false); if(!response.ok){setMessage(result.error??'Could not send invitation.');return} setMessage('Invitation sent. Ask the invitee to check their inbox.'); if (onInviteSent) onInviteSent(); setTimeout(close,1200) }; return <Modal title="Invite team member" close={close}><input value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Full name" className="h-11 rounded-xl border border-input bg-background px-3" /><input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address" type="email" className="h-11 rounded-xl border border-input bg-background px-3" /><select value={role} onChange={e=>setRole(e.target.value as 'Employee'|'Administrator')} className="h-11 rounded-xl border border-input bg-background px-3"><option>Employee</option><option>Administrator</option></select>{message&&<p className="text-sm text-muted-foreground">{message}</p>}<button onClick={submit} disabled={busy} className="h-11 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">{busy?'Sending…':'Send invitation'}</button></Modal> }
-function ConfirmLogout({ close }: { close:()=>void }) { const supabase = createClient(); return <Modal title="Log out?" close={close}><p className="text-sm text-muted-foreground">You will need to sign in again to access Kolo Ledger.</p><button onClick={close} className="h-11 rounded-xl bg-primary font-semibold text-primary-foreground">Stay signed in</button><button onClick={async () => { await supabase.auth.signOut(); window.location.reload() }} className="h-11 rounded-xl border border-border font-semibold">Log out</button></Modal> }
+function ConfirmLogout({ close }: { close:()=>void }) { const supabase = createClient(); return <Modal title="Log out?" close={close}><p className="text-sm text-muted-foreground">You will need to sign in again to access Kolo Ledger.</p><button onClick={close} className="h-11 rounded-xl bg-primary font-semibold text-primary-foreground">Stay signed in</button><button onClick={async () => { if (typeof window !== 'undefined') { sessionStorage.removeItem('kolo_session_active'); sessionStorage.removeItem('kolo_ledger_v2_user'); localStorage.removeItem('kolo_ledger_v2_user'); } await supabase.auth.signOut(); window.location.reload() }} className="h-11 rounded-xl border border-border font-semibold">Log out</button></Modal> }
 function AddProduct({ close, onAdd }: { close: () => void; onAdd: (product: { name: string; category: string; price: number; stock: number; revenue: number; units: number }) => void }) {
   const [name, setName] = useState('')
   const [category, setCategory] = useState('GPS Tracking')
@@ -963,7 +1000,10 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: { id: string;
       setMessage(result.error.message.toLowerCase().includes('invalid') ? 'Invalid email or password.' : result.error.message)
       return
     }
-    if (result.data.user && result.data.session) {
+    if (result.data.user) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('kolo_session_active', 'true')
+      }
       onAuthenticated({ id: result.data.user.id, email: result.data.user.email })
     } else {
       setMessage('Check your email to confirm your account, then sign in.')

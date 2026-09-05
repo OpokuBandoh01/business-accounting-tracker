@@ -16,23 +16,14 @@ export function createClient(): ReturnType<typeof createBrowserClient> {
       auth: {
         getUser: async () => {
           if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem('kolo_ledger_v2_user')
+            const storedUser = sessionStorage.getItem('kolo_ledger_v2_user')
             let mockUser = null
             if (storedUser) {
               try { mockUser = JSON.parse(storedUser) } catch (e) {}
             }
-            if (!mockUser) {
-              mockUser = {
-                id: 'mock-admin-id',
-                email: 'admin@mabushi.com',
-                user_metadata: { full_name: 'Opoku Bandoh' }
-              }
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('kolo_ledger_v2_user', JSON.stringify(mockUser))
-              }
-            }
             return { data: { user: mockUser }, error: null }
           }
+          return { data: { user: null }, error: null }
         },
         signUp: async (options: any) => {
           return { data: { user: {} }, error: null }
@@ -45,19 +36,19 @@ export function createClient(): ReturnType<typeof createBrowserClient> {
             user_metadata: { full_name: isEmployee ? 'Mr. P' : 'Opoku Bandoh' }
           }
           if (typeof window !== 'undefined') {
-            localStorage.setItem('kolo_ledger_v2_user', JSON.stringify(mockUser))
+            sessionStorage.setItem('kolo_ledger_v2_user', JSON.stringify(mockUser))
           }
           return { data: { user: mockUser }, error: null }
         },
         signOut: async () => {
           if (typeof window !== 'undefined') {
-            localStorage.removeItem('kolo_ledger_v2_user')
+            sessionStorage.removeItem('kolo_ledger_v2_user')
           }
           return { error: null }
         },
         getSession: async () => {
           if (typeof window !== 'undefined') {
-            const mockUserStr = localStorage.getItem('kolo_ledger_v2_user')
+            const mockUserStr = sessionStorage.getItem('kolo_ledger_v2_user')
             if (mockUserStr) {
               const mockUser = JSON.parse(mockUserStr)
               const profilesStr = localStorage.getItem('kolo_ledger_v2_profiles') || '[]'
@@ -244,7 +235,11 @@ export function createClient(): ReturnType<typeof createBrowserClient> {
     return mockSupabase as unknown as ReturnType<typeof createBrowserClient>
   }
   
-  client = createBrowserClient(url, key)
+  client = createBrowserClient(url, key, {
+    cookieOptions: {
+      maxAge: undefined
+    }
+  })
   return client
 }
 
